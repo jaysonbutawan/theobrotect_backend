@@ -45,20 +45,18 @@ async function requestOtp(emailRaw) {
   const otp = generateOtp6();
   const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
 
-  await otpModel.insertOtp({ email, otpHash, ttlSeconds: OTP_TTL_SECONDS });
+ await otpModel.insertOtp({ email, otpHash, ttlSeconds: OTP_TTL_SECONDS });
 
- try {
-  const info = await sendOtpEmail(email, otp, OTP_TTL_SECONDS);
-  console.log("OTP email sent to", email, "messageId:", info.messageId);
+// respond fast
+const response = { status: "OTP_SENT", expires_in_seconds: OTP_TTL_SECONDS };
 
-  return { status: "OTP_SENT", expires_in_seconds: OTP_TTL_SECONDS };
-} catch (err) {
-  console.error("Email failed FULL:", err); 
-  return {
-    status: "EMAIL_FAILED",
-    message: err.message,
-  };
-}
+// fire-and-forget email
+sendOtpEmail(email, otp, OTP_TTL_SECONDS)
+  .then((info) => console.log("OTP email sent:", info.messageId))
+  .catch((err) => console.error("Email failed FULL:", err));
+
+return response;
+
 }
 
 async function verifyOtp(emailRaw, otpRaw) {
