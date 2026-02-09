@@ -3,7 +3,7 @@ const { isValidEmail } = require("../utils/validators");
 const { generateOtp6 } = require("../utils/otp");
 const { sendOtpEmail } = require("../config/mailer");
 const userModel = require("../models/user.model");
-const otpModel = require("../models/emailOtp.model");
+const otpModel = require("../models/email_otp.model");
 const { signJwt } = require("../utils/jwt");
 
 const OTP_TTL_SECONDS = Number(process.env.OTP_TTL_SECONDS || 300);
