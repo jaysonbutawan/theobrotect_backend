@@ -61,7 +61,6 @@ async function requestOtp(emailRaw) {
 }
 }
 
-//aaaaaaaaaaaaaaaaaa
 async function verifyOtp(emailRaw, otpRaw) {
   const email = (emailRaw || "").trim().toLowerCase();
   const otp = (otpRaw || "").trim();

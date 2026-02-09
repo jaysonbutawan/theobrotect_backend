@@ -3,12 +3,13 @@ const otpService = require("../services/otp.service");
 exports.requestOtp = async (req, res) => {
   try {
     const result = await otpService.requestOtp(req.body?.email);
-    
+
     const statusMap = {
       INVALID_EMAIL: 400,
       ACCOUNT_DELETED: 403,
       COOLDOWN: 429,
       TOO_MANY_REQUESTS: 429,
+      EMAIL_FAILED: 500,
       OTP_SENT: 200,
     };
 
