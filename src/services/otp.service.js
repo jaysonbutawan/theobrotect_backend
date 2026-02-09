@@ -47,16 +47,20 @@ async function requestOtp(emailRaw) {
 
   await otpModel.insertOtp({ email, otpHash, ttlSeconds: OTP_TTL_SECONDS });
 
-  sendOtpEmail(email, otp, OTP_TTL_SECONDS)
-    .then(() => console.log("OTP email sent to", email))
-    .catch((err) => console.error("Email failed:", err.message));
-
-  if (process.env.NODE_ENV !== "production") {
-    console.log("OTP (DEV ONLY):", otp);
-  }
+  try {
+  const info = await sendOtpEmail(email, otp, OTP_TTL_SECONDS);
+  console.log("OTP email sent to", email, "messageId:", info.messageId);
 
   return { status: "OTP_SENT", expires_in_seconds: OTP_TTL_SECONDS };
+} catch (err) {
+  console.error("Email failed FULL:", err); 
+  return {
+    status: "EMAIL_FAILED",
+    message: err.message,
+  };
 }
+}
+
 
 async function verifyOtp(emailRaw, otpRaw) {
   const email = (emailRaw || "").trim().toLowerCase();
