@@ -3,31 +3,22 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
-// =========================
-// Config (tune as you like)
-// =========================
-const OTP_TTL_SECONDS = Number(process.env.OTP_TTL_SECONDS || 300); // OTP valid time, e.g. 300s (5 min)
-const OTP_COOLDOWN_SECONDS = Number(process.env.OTP_COOLDOWN_SECONDS || 50); // cooldown between requests
-const OTP_MAX_PER_WINDOW = Number(process.env.OTP_MAX_PER_WINDOW || 3); // max requests per window
-const OTP_WINDOW_MINUTES = Number(process.env.OTP_WINDOW_MINUTES || 10); // window size
+const OTP_TTL_SECONDS = Number(process.env.OTP_TTL_SECONDS || 300); 
+const OTP_COOLDOWN_SECONDS = Number(process.env.OTP_COOLDOWN_SECONDS || 50); 
+const OTP_MAX_PER_WINDOW = Number(process.env.OTP_MAX_PER_WINDOW || 3); 
+const OTP_WINDOW_MINUTES = Number(process.env.OTP_WINDOW_MINUTES || 10); 
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS || 10);
 
-// =========================
-// Email sender
-// =========================
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: Number(process.env.EMAIL_PORT || 587),
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // use Gmail App Password
+    pass: process.env.EMAIL_PASS, 
   },
 });
 
-// =========================
-// Helpers
-// =========================
 function isValidEmail(email) {
   return (
     typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -46,10 +37,6 @@ function signJwt(user) {
   );
 }
 
-// =========================
-// POST /auth/request-otp
-// body: { email }
-// =========================
 exports.requestOtp = async (req, res) => {
   try {
     const email = (req.body?.email || "").trim().toLowerCase();
@@ -124,7 +111,6 @@ exports.requestOtp = async (req, res) => {
       [email, otpHash, OTP_TTL_SECONDS.toString()],
     );
 
-    // 6) Send email
     await transporter.verify();
     await transporter.sendMail({
       from: `"TheobroTect Security" <${process.env.EMAIL_USER}>`,
@@ -160,10 +146,6 @@ If you did not request this, please ignore this email.
   }
 };
 
-// =========================
-// POST /auth/verify-otp
-// body: { email, otp }
-// =========================
 exports.verifyOtp = async (req, res) => {
   try {
     const email = (req.body?.email || "").trim().toLowerCase();
