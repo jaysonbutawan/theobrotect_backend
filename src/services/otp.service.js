@@ -47,7 +47,7 @@ async function requestOtp(emailRaw) {
 
   await otpModel.insertOtp({ email, otpHash, ttlSeconds: OTP_TTL_SECONDS });
 
-  try {
+ try {
   const info = await sendOtpEmail(email, otp, OTP_TTL_SECONDS);
   console.log("OTP email sent to", email, "messageId:", info.messageId);
 
