@@ -1,62 +1,30 @@
-// const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-// const transporter = nodemailer.createTransport({
-//   host: process.env.EMAIL_HOST,
-//   port: Number(process.env.EMAIL_PORT || 587),
-//   secure: false,
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS,
-//   },
-//   family: 4,
-//   connectionTimeout: 10000,
-//   socketTimeout: 10000,
-// });
+if (!process.env.RESEND_API_KEY) {
+  console.warn("⚠️ RESEND_API_KEY is not set");
+}
 
-// async function sendOtpEmail(email, otp, ttlSeconds) {
-//   return transporter.sendMail({
-//     from: `"TheobroTect Security" <${process.env.EMAIL_USER}>`,
-//     to: email,
-//     subject: "Your One-Time Password (OTP)",
-//     text: `Your OTP is ${otp}. It expires in ${ttlSeconds} seconds.`,
-//   });
-// }
-
-// module.exports = { transporter, sendOtpEmail };
-
-
-const nodemailer = require("nodemailer");
-
-const port = Number(process.env.EMAIL_PORT || 587);
-
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port,
-  secure: port === 465, // ✅ 465 = true, 587 = false
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  family: 4,                 // force IPv4
-  connectionTimeout: 20000,  // ✅ longer timeouts
-  socketTimeout: 20000,
-});
-
-// ✅ Add this once to know if SMTP can be reached
-transporter.verify()
-  .then(() => console.log("✅ SMTP ready (connected to Gmail)"))
-  .catch((err) => console.error("❌ SMTP verify failed FULL:", err));
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtpEmail(email, otp, ttlSeconds) {
-  const info = await transporter.sendMail({
-    from: `"TheobroTect Security" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const from = process.env.RESEND_FROM || "TheobroTect Security <onboarding@resend.dev>";
+
+  const { data, error } = await resend.emails.send({
+    from,
+    to: [email],
     subject: "Your One-Time Password (OTP)",
     text: `Your OTP is ${otp}. It expires in ${ttlSeconds} seconds.`,
   });
 
-  return info;
+  if (error) {
+    // Make sure your service can catch this and return EMAIL_FAILED
+    const msg = typeof error === "string" ? error : (error.message || "Resend error");
+    const err = new Error(msg);
+    err.details = error;
+    throw err;
+  }
+
+  return data; // contains id, etc.
 }
 
-module.exports = { transporter, sendOtpEmail };
-
+module.exports = { sendOtpEmail };
