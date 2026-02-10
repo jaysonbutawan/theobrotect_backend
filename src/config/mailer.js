@@ -7,7 +7,9 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtpEmail(email, otp, ttlSeconds) {
-  const from = process.env.RESEND_FROM || "TheobroTect Security <onboarding@resend.dev>";
+  const from =
+  (process.env.RESEND_FROM || "TheobroTect Security <onboarding@resend.dev>").trim();
+
 
   const { data, error } = await resend.emails.send({
     from,
@@ -17,7 +19,6 @@ async function sendOtpEmail(email, otp, ttlSeconds) {
   });
 
   if (error) {
-    // Make sure your service can catch this and return EMAIL_FAILED
     const msg = typeof error === "string" ? error : (error.message || "Resend error");
     const err = new Error(msg);
     err.details = error;
