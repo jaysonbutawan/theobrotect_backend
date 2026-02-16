@@ -28,8 +28,10 @@ app.use(
   })
 );
 
-app.use("/auth", require("./routes/auth_routes"));
-app.use("/users", require("./routes/user_routes"));
+app.use("/api/auth", require("./routes/auth_routes"));
+app.use("/api/users", require("./routes/user_routes"));
+
+app.use("/api/scans", require("./routes/user_routes"));
 
 app.use("/api/admin", require("./routes/admin"));
 
