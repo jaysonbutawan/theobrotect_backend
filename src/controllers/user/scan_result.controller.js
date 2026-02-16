@@ -1,4 +1,4 @@
-const ScanResults = require("../models/scan_results.model");
+const ScanResults = require("../../models/scan_results.model");
 
 function isISODate(s) {
   if (!s) return false;
