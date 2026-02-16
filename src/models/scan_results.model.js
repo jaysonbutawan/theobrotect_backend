@@ -1,7 +1,5 @@
-// src/models/scan_results.model.js
 const pool = require("../config/db");
 
-// allow null/undefined/"" -> null
 const n2 = (v) => (v === undefined || v === null || v === "" ? null : v);
 
 async function upsertScanByUserAndLocalId(userId, data) {
