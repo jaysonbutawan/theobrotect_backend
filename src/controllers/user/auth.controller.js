@@ -1,4 +1,4 @@
-const otpService = require("../services/otp.service");
+const otpService = require("../../services/otp.service");
 
 exports.requestOtp = async (req, res) => {
   try {
