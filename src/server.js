@@ -31,6 +31,8 @@ app.use(
 app.use("/auth", require("./routes/auth_routes"));
 app.use("/users", require("./routes/user_routes"));
 
+app.use("/api/admin", require("./routes/admin"));
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running" });
 });
