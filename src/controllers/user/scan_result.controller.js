@@ -8,11 +8,9 @@ function isISODate(s) {
 
 exports.syncScan = async (req, res) => {
   try {
-    const authUserId = req.user?.user_id;
-    if (!authUserId) return res.status(401).json({ status: "UNAUTHORIZED" });
-
     const body = req.body || {};
     const {
+      user_id,
       local_id,
       disease_key,
       severity_key,
@@ -21,8 +19,8 @@ exports.syncScan = async (req, res) => {
       next_scan_at,
     } = body;
 
-    // validation
     if (
+      !user_id ||
       !local_id ||
       typeof local_id !== "string" ||
       !disease_key ||
@@ -40,7 +38,7 @@ exports.syncScan = async (req, res) => {
       return res.status(400).json({ status: "INVALID_NEXT_SCAN_AT" });
     }
 
-    const scan = await ScanResults.upsertScanByUserAndLocalId(authUserId, body);
+    const scan = await ScanResults.upsertScanByUserAndLocalId(user_id, body);
 
     return res.status(200).json({ status: "OK", scan });
   } catch (err) {
@@ -51,13 +49,14 @@ exports.syncScan = async (req, res) => {
 
 exports.listMyScans = async (req, res) => {
   try {
-    const authUserId = req.user?.user_id;
-    if (!authUserId) return res.status(401).json({ status: "UNAUTHORIZED" });
+    const user_id = req.query.user_id;
+    if (!user_id) return res.status(400).json({ status: "USER_ID_REQUIRED" });
 
-    const { rows, limit, offset } = await ScanResults.listScansByUser(authUserId, {
-      limit: req.query.limit,
-      offset: req.query.offset,
-    });
+    const { rows, limit, offset } =
+      await ScanResults.listScansByUser(user_id, {
+        limit: req.query.limit,
+        offset: req.query.offset,
+      });
 
     return res.status(200).json({ status: "OK", scans: rows, limit, offset });
   } catch (err) {
@@ -68,10 +67,14 @@ exports.listMyScans = async (req, res) => {
 
 exports.getMyScanById = async (req, res) => {
   try {
-    const authUserId = req.user?.user_id;
-    if (!authUserId) return res.status(401).json({ status: "UNAUTHORIZED" });
+    const user_id = req.query.user_id;
+    if (!user_id) return res.status(400).json({ status: "USER_ID_REQUIRED" });
 
-    const scan = await ScanResults.getScanByIdForUser(req.params.id, authUserId);
+    const scan = await ScanResults.getScanByIdForUser(
+      req.params.id,
+      user_id
+    );
+
     if (!scan) return res.status(404).json({ status: "NOT_FOUND" });
 
     return res.status(200).json({ status: "OK", scan });
