@@ -25,25 +25,35 @@ async function upsertScanByUserAndLocalId(userId, data) {
       next_scan_at, created_at, updated_at
     )
     VALUES (
-      $1, $2, $3, COALESCE($4::timestamptz, NOW()),
+      $1, $2, $3,
+      COALESCE($4::timestamptz, NOW()),
       $5, $6, $7,
-      $8, $9, $10, $11,
-      $12, NOW(), NOW()
+      $8::double precision, $9::double precision, $10::double precision, $11,
+      $12::timestamptz,
+      NOW(), NOW()
     )
     ON CONFLICT (user_id, local_id)
     DO UPDATE SET
-      image_url = COALESCE(EXCLUDED.image_url, scan_results.image_url),
-      scanned_at = EXCLUDED.scanned_at,
-      disease_key = EXCLUDED.disease_key,
-      severity_key = EXCLUDED.severity_key,
-      confidence = EXCLUDED.confidence,
-      location_lat = EXCLUDED.location_lat,
-      location_lng = EXCLUDED.location_lng,
-      location_accuracy = EXCLUDED.location_accuracy,
-      location_label = EXCLUDED.location_label,
-      next_scan_at = EXCLUDED.next_scan_at,
-      updated_at = NOW()
-    RETURNING id, user_id, local_id, image_url, scanned_at, next_scan_at, updated_at;
+      -- Only replace with new values if they are not null (prevents "nulling out" on retries)
+      image_url          = COALESCE(EXCLUDED.image_url, scan_results.image_url),
+
+      -- Preserve existing scanned_at if the incoming scanned_at was null
+      scanned_at         = COALESCE(EXCLUDED.scanned_at, scan_results.scanned_at),
+
+      disease_key        = COALESCE(EXCLUDED.disease_key, scan_results.disease_key),
+      severity_key       = COALESCE(EXCLUDED.severity_key, scan_results.severity_key),
+      confidence         = COALESCE(EXCLUDED.confidence, scan_results.confidence),
+
+      location_lat       = COALESCE(EXCLUDED.location_lat, scan_results.location_lat),
+      location_lng       = COALESCE(EXCLUDED.location_lng, scan_results.location_lng),
+      location_accuracy  = COALESCE(EXCLUDED.location_accuracy, scan_results.location_accuracy),
+      location_label     = COALESCE(EXCLUDED.location_label, scan_results.location_label),
+
+      next_scan_at       = COALESCE(EXCLUDED.next_scan_at, scan_results.next_scan_at),
+
+      updated_at         = NOW()
+    RETURNING
+      id, user_id, local_id, image_url, scanned_at, next_scan_at, created_at, updated_at;
   `;
 
   const values = [
@@ -64,7 +74,6 @@ async function upsertScanByUserAndLocalId(userId, data) {
   const result = await pool.query(q, values);
   return result.rows[0];
 }
-
 async function listScansByUser(userId, { limit = 20, offset = 0 } = {}) {
   const safeLimit = Math.min(Number(limit || 20), 100);
   const safeOffset = Math.max(Number(offset || 0), 0);
