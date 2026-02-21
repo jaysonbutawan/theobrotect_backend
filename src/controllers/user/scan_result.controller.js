@@ -9,9 +9,22 @@ function isISODate(s) {
 exports.syncScan = async (req, res) => {
   try {
     const body = req.body || {};
+//remove this when login work
+    const isUuid = (s) =>
+      typeof s === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 
     const userId = req.user?.id || req.user?.user_id;
     if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
+
+    //remove this when login work
+      if (!isUuid(userId)) {
+      return res.status(400).json({
+        status: "INVALID_USER_ID",
+        message: "user_id must be a UUID",
+        received: userId,
+      });
+    }
 
     const {
       local_id,
