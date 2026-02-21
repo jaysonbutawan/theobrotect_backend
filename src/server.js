@@ -27,6 +27,8 @@ app.use(
     credentials: true,
   })
 );
+//testing route only
+app.use("/api/dev", require("./routes/dev.routes"));
 
 app.use("/api/auth", require("./routes/auth_routes"));
 app.use("/api/users", require("./routes/user_routes"));
