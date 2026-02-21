@@ -16,8 +16,13 @@ exports.syncScan = async (req, res) => {
     const {
       local_id,
       disease_key,
+      image_url,
       severity_key,
       confidence,
+      location_lat,
+      location_lng,
+      location_accuracy,
+      location_label,
       scanned_at,
       next_scan_at,
     } = body;
