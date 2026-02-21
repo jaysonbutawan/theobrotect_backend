@@ -9,8 +9,11 @@ function isISODate(s) {
 exports.syncScan = async (req, res) => {
   try {
     const body = req.body || {};
+
+    const userId = req.user?.id || req.user?.user_id;
+    if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
+
     const {
-      user_id,
       local_id,
       disease_key,
       severity_key,
@@ -20,7 +23,6 @@ exports.syncScan = async (req, res) => {
     } = body;
 
     if (
-      !user_id ||
       !local_id ||
       typeof local_id !== "string" ||
       !disease_key ||
@@ -38,7 +40,7 @@ exports.syncScan = async (req, res) => {
       return res.status(400).json({ status: "INVALID_NEXT_SCAN_AT" });
     }
 
-    const scan = await ScanResults.upsertScanByUserAndLocalId(user_id, body);
+    const scan = await ScanResults.upsertScanByUserAndLocalId(userId, body);
 
     return res.status(200).json({ status: "OK", scan });
   } catch (err) {
@@ -49,14 +51,13 @@ exports.syncScan = async (req, res) => {
 
 exports.listMyScans = async (req, res) => {
   try {
-    const user_id = req.query.user_id;
-    if (!user_id) return res.status(400).json({ status: "USER_ID_REQUIRED" });
+    const userId = req.user?.id || req.user?.user_id;
+    if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
 
-    const { rows, limit, offset } =
-      await ScanResults.listScansByUser(user_id, {
-        limit: req.query.limit,
-        offset: req.query.offset,
-      });
+    const { rows, limit, offset } = await ScanResults.listScansByUser(userId, {
+      limit: req.query.limit,
+      offset: req.query.offset,
+    });
 
     return res.status(200).json({ status: "OK", scans: rows, limit, offset });
   } catch (err) {
@@ -67,13 +68,10 @@ exports.listMyScans = async (req, res) => {
 
 exports.getMyScanById = async (req, res) => {
   try {
-    const user_id = req.query.user_id;
-    if (!user_id) return res.status(400).json({ status: "USER_ID_REQUIRED" });
+    const userId = req.user?.id || req.user?.user_id;
+    if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
 
-    const scan = await ScanResults.getScanByIdForUser(
-      req.params.id,
-      user_id
-    );
+    const scan = await ScanResults.getScanByIdForUser(req.params.id, userId);
 
     if (!scan) return res.status(404).json({ status: "NOT_FOUND" });
 
