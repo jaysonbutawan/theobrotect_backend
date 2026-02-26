@@ -9,16 +9,18 @@ function isISODate(s) {
 exports.syncScan = async (req, res) => {
   try {
     const body = req.body || {};
-//remove this when login work
+    //remove this when login work
     const isUuid = (s) =>
       typeof s === "string" &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        s,
+      );
 
     const userId = req.user?.id || req.user?.user_id;
     if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
 
     //remove this when login work
-      if (!isUuid(userId)) {
+    if (!isUuid(userId)) {
       return res.status(400).json({
         status: "INVALID_USER_ID",
         message: "user_id must be a UUID",
@@ -72,14 +74,53 @@ exports.listMyScans = async (req, res) => {
     const userId = req.user?.id || req.user?.user_id;
     if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
 
-    const { rows, limit, offset } = await ScanResults.listScansByUser(userId, {
-      limit: req.query.limit,
-      offset: req.query.offset,
+    const { disease_key, severity_key, from, to, limit, offset } = req.query;
+
+    const { rows, limit: l, offset: o } = await ScanResults.listScans({
+      requester_user_id: userId,
+      disease_key,
+      severity_key,
+      from,
+      to,
+      limit,
+      offset,
     });
 
-    return res.status(200).json({ status: "OK", scans: rows, limit, offset });
+    return res.status(200).json({ status: "OK", scans: rows, limit: l, offset: o });
   } catch (err) {
     console.error("listMyScans error:", err);
+    return res.status(500).json({ status: "SERVER_ERROR" });
+  }
+};
+
+exports.listScans = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.user_id;
+    const role = req.user?.role;
+
+    if (!userId) return res.status(401).json({ status: "UNAUTHORIZED" });
+
+    const { disease_key, severity_key, from, to, limit, offset, user_id } =
+      req.query;
+
+    const filters = {
+      disease_key,
+      severity_key,
+      from,
+      to,
+      limit,
+      offset,
+      user_id: role === "admin" ? user_id : undefined,
+      requester_user_id: role === "admin" ? undefined : userId,
+    };
+
+    const { rows, limit: l, offset: o } = await ScanResults.listScans(filters);
+
+    return res
+      .status(200)
+      .json({ status: "OK", scans: rows, limit: l, offset: o });
+  } catch (err) {
+    console.error("listScans error:", err);
     return res.status(500).json({ status: "SERVER_ERROR" });
   }
 };

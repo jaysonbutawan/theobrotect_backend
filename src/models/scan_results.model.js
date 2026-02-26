@@ -103,8 +103,63 @@ async function getScanByIdForUser(scanId, userId) {
   return rows[0] || null;
 }
 
-module.exports = {
-  upsertScanByUserAndLocalId,
-  listScansByUser,
-  getScanByIdForUser,
+exports.listScans = async (filters = {}) => {
+  const {
+    requester_user_id,
+    user_id,
+    disease_key,
+    severity_key,
+    from,
+    to,
+    limit,
+    offset,
+  } = filters;
+
+  const l = Number.isFinite(Number(limit)) ? Math.min(Number(limit), 200) : 50;
+  const o = Number.isFinite(Number(offset)) ? Math.max(Number(offset), 0) : 0;
+
+  const where = [];
+  const params = [];
+
+  // choose one user constraint
+  const effectiveUserId = requester_user_id || user_id;
+  if (effectiveUserId) {
+    params.push(effectiveUserId);
+    where.push(`user_id = $${params.length}`);
+  }
+
+  if (disease_key) {
+    params.push(disease_key);
+    where.push(`disease_key = $${params.length}`);
+  }
+
+  if (severity_key) {
+    params.push(severity_key);
+    where.push(`severity_key = $${params.length}`);
+  }
+
+  //optional: validate dates before using
+  if (from) {
+    params.push(from);
+    where.push(`scanned_at >= $${params.length}::timestamptz`);
+  }
+
+  if (to) {
+    params.push(to);
+    where.push(`scanned_at <= $${params.length}::timestamptz`);
+  }
+
+  params.push(l, o);
+
+  const q = `
+    SELECT *
+    FROM scan_results
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    ORDER BY scanned_at DESC
+    LIMIT $${params.length - 1}
+    OFFSET $${params.length}
+  `;
+
+  const { rows } = await pool.query(q, params);
+  return { rows, limit: l, offset: o };
 };
