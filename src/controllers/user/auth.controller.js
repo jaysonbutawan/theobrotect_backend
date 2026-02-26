@@ -43,13 +43,39 @@ exports.requestOtp = async (req, res) => {
     console.error("requestOtp error:", err?.stack || err);
     return res
       .status(500)
-      .json({ status: "SERVER_ERROR", message: err?.message || "Internal error" });
+      .json({
+        status: "SERVER_ERROR",
+        message: err?.message || "Internal error",
+      });
   }
 };
 
 exports.verifyOtp = async (req, res) => {
   try {
-    const result = await otpService.verifyOtp(req.body?.email, req.body?.otp);
+    const emailRaw = req.body?.email;
+    const otpRaw = req.body?.otp;
+    if (typeof emailRaw !== "string" || !emailRaw.trim()) {
+      return res
+        .status(400)
+        .json({ status: "INVALID_INPUT", message: "Email is required" });
+    }
+    if (typeof otpRaw !== "string" || !otpRaw.trim()) {
+      return res
+        .status(400)
+        .json({ status: "INVALID_INPUT", message: "OTP is required" });
+    }
+
+    const email = emailRaw.trim().toLowerCase();
+    const otp = otpRaw.trim();
+
+    const deletedAt = await userModel.getDeletedAtByEmail(email);
+    if (deletedAt) {
+      return res
+        .status(403)
+        .json({ status: "ACCOUNT_DELETED", message: "Account is deleted." });
+    }
+
+    const result = await otpService.verifyOtp(email, otp);
 
     const statusMap = {
       INVALID_INPUT: 400,
@@ -62,9 +88,19 @@ exports.verifyOtp = async (req, res) => {
       OK: 200,
     };
 
-    return res.status(statusMap[result.status] || 500).json(result);
+    if (!result?.status) {
+      console.error("otpService.verifyOtp returned invalid result:", result);
+      return res
+        .status(500)
+        .json({ status: "SERVER_ERROR", message: "Invalid service result" });
+    }
+
+    return res.status(statusMap[result.status] ?? 500).json(result);
   } catch (err) {
-    console.error("verifyOtp error:", err);
-    return res.status(500).json({ status: "SERVER_ERROR" });
+    console.error("verifyOtp error:", err?.stack || err);
+    return res.status(500).json({
+      status: "SERVER_ERROR",
+      message: err?.message || "Internal error",
+    });
   }
 };
