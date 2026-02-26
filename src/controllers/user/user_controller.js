@@ -1,5 +1,5 @@
 const pool = require("../../config/db");
-const userModel = require("../models/user.model");
+const userModel = require("../../models/user.model");
 
 exports.register = async (req, res) => {
   const email = (req.body?.email || "").trim().toLowerCase();
