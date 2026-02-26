@@ -2,7 +2,12 @@ const otpService = require("../../services/otp.service");
 
 exports.requestOtp = async (req, res) => {
   try {
-    const result = await otpService.requestOtp(req.body?.email);
+     const email = req.body?.email;
+    if (typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({ status: "INVALID_EMAIL", message: "Email is required" });
+    }
+
+    const result = await otpService.requestOtp(email.trim().toLowerCase());
 
     const statusMap = {
       INVALID_EMAIL: 400,
@@ -16,7 +21,7 @@ exports.requestOtp = async (req, res) => {
     return res.status(statusMap[result.status] || 500).json(result);
   } catch (err) {
     console.error("requestOtp error:", err);
-    return res.status(500).json({ status: "SERVER_ERROR" });
+    return res.status(500).json({ status: "SERVER_ERROR", message: err?.message || "Internal error" });
   }
 };
 

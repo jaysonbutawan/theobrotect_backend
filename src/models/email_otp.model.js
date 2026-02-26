@@ -13,12 +13,15 @@ async function getLatestOtpCreatedAt(email) {
 }
 
 async function countOtpsInWindow(email, windowMinutes) {
+  const mins = Number(windowMinutes);
+  if (!Number.isFinite(mins) || mins <= 0) throw new Error("Invalid windowMinutes");
+
   const res = await pool.query(
     `SELECT COUNT(*)::int AS count
      FROM email_otps
      WHERE user_email = $1
-     AND created_at > NOW() - INTERVAL '${windowMinutes} minutes'`,
-    [email]
+       AND created_at > NOW() - make_interval(mins => $2)`,
+    [email, mins]
   );
   return res.rows[0]?.count ?? 0;
 }
@@ -33,11 +36,13 @@ async function invalidateActiveOtps(email) {
 }
 
 async function insertOtp({ email, otpHash, ttlSeconds }) {
+  const ttl = Number(ttlSeconds);
+  if (!Number.isFinite(ttl) || ttl <= 0) throw new Error("Invalid ttlSeconds");
+
   await pool.query(
-    `INSERT INTO email_otps
-     (user_email, otp_hash, expires_at, is_used, created_at)
-     VALUES ($1, $2, NOW() + INTERVAL '${ttlSeconds} seconds', false, NOW())`,
-    [email, otpHash]
+    `INSERT INTO email_otps (user_email, otp_hash, expires_at, is_used, created_at)
+     VALUES ($1, $2, NOW() + make_interval(secs => $3), false, NOW())`,
+    [email, otpHash, ttl]
   );
 }
 
