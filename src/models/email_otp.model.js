@@ -62,6 +62,16 @@ async function markOtpUsed(id) {
   await pool.query(`UPDATE email_otps SET is_used = true WHERE id = $1`, [id]);
 }
 
+async function getDeletedAtByEmail(email) {
+  const res = await pool.query(
+    `SELECT deleted_at
+     FROM users
+     WHERE email = $1
+     LIMIT 1`,
+    [email]
+  );
+  return res.rows[0]?.deleted_at ?? null;
+}
 module.exports = {
   getLatestOtpCreatedAt,
   countOtpsInWindow,
@@ -69,4 +79,5 @@ module.exports = {
   insertOtp,
   getLatestActiveOtp,
   markOtpUsed,
+  getDeletedAtByEmail,
 };

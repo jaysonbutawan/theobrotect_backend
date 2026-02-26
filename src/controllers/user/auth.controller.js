@@ -2,12 +2,24 @@ const otpService = require("../../services/otp.service");
 
 exports.requestOtp = async (req, res) => {
   try {
-     const email = req.body?.email;
-    if (typeof email !== "string" || !email.trim()) {
-      return res.status(400).json({ status: "INVALID_EMAIL", message: "Email is required" });
+    const emailRaw = req.body?.email;
+
+    if (typeof emailRaw !== "string" || !emailRaw.trim()) {
+      return res
+        .status(400)
+        .json({ status: "INVALID_EMAIL", message: "Email is required" });
     }
 
-    const result = await otpService.requestOtp(email.trim().toLowerCase());
+    const email = emailRaw.trim().toLowerCase();
+
+    const deletedAt = await userModel.getDeletedAtByEmail(email);
+    if (deletedAt) {
+      return res
+        .status(403)
+        .json({ status: "ACCOUNT_DELETED", message: "Account is deleted." });
+    }
+
+    const result = await otpService.requestOtp(email);
 
     const statusMap = {
       INVALID_EMAIL: 400,
@@ -18,10 +30,19 @@ exports.requestOtp = async (req, res) => {
       OTP_SENT: 200,
     };
 
-    return res.status(statusMap[result.status] || 500).json(result);
+    if (!result?.status) {
+      console.error("otpService returned invalid result:", result);
+      return res
+        .status(500)
+        .json({ status: "SERVER_ERROR", message: "Invalid service result" });
+    }
+
+    return res.status(statusMap[result.status] ?? 500).json(result);
   } catch (err) {
-    console.error("requestOtp error:", err);
-    return res.status(500).json({ status: "SERVER_ERROR", message: err?.message || "Internal error" });
+    console.error("requestOtp error:", err?.stack || err);
+    return res
+      .status(500)
+      .json({ status: "SERVER_ERROR", message: err?.message || "Internal error" });
   }
 };
 
