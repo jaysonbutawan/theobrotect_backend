@@ -30,11 +30,8 @@ app.use(
 
 app.use("/api/auth", require("./routes/auth_routes"));
 app.use("/api/users", require("./routes/user_routes"));
-
 app.use("/api/scans", require("./routes/scan_results.routes"));
-
 app.use("/api/admin", require("./routes/admin"));
-
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running" });
 });
