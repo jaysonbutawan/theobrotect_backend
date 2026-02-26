@@ -1,4 +1,5 @@
 const otpService = require("../../services/otp.service");
+const userModel = require("../../models/user.model");
 
 exports.requestOtp = async (req, res) => {
   try {

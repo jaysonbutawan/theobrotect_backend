@@ -68,6 +68,17 @@ async function registerUser({ email, fullName, address, contact }) {
   }
 }
 
+async function getDeletedAtByEmail(email) {
+  const res = await pool.query(
+    `SELECT deleted_at
+     FROM users
+     WHERE email = $1
+     LIMIT 1`,
+    [email]
+  );
+  return res.rows[0]?.deleted_at ?? null;
+}
+
 module.exports = {
   isValidEmail,
   // low-level
@@ -76,4 +87,5 @@ module.exports = {
   insertUserProfile,
   // high-level
   registerUser,
+  getDeletedAtByEmail,
 };
