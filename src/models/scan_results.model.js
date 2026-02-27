@@ -121,7 +121,6 @@ exports.listScans = async (filters = {}) => {
   const where = [];
   const params = [];
 
-  // choose one user constraint
   const effectiveUserId = requester_user_id || user_id;
   if (effectiveUserId) {
     params.push(effectiveUserId);
@@ -138,7 +137,6 @@ exports.listScans = async (filters = {}) => {
     where.push(`severity_key = $${params.length}`);
   }
 
-  //optional: validate dates before using
   if (from) {
     params.push(from);
     where.push(`scanned_at >= $${params.length}::timestamptz`);
@@ -162,4 +160,10 @@ exports.listScans = async (filters = {}) => {
 
   const { rows } = await pool.query(q, params);
   return { rows, limit: l, offset: o };
+};
+
+module.exports = {
+  upsertScanByUserAndLocalId,
+  listScansByUser,
+  getScanByIdForUser,
 };

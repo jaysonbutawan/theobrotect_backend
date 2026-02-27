@@ -1,4 +1,3 @@
-// middleware/requireRole.js
 module.exports.requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     const role = req.user?.role;

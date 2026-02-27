@@ -1,22 +1,34 @@
-// models/user.model.js
 const pool = require("../config/db");
 
-/**
- * Simple email validator (same as controller)
- * Keep here so it's reusable / testable.
- */
 function isValidEmail(email) {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/* -------- Low level functions (accept a client) -------- */
+async function findByEmail(clientOrEmail, maybeEmail) {
+  let client;
+  let email;
 
-async function findByEmail(client, email) {
-  const q = `SELECT id, deleted_at FROM users WHERE email = $1 LIMIT 1`;
+  if (typeof clientOrEmail === "string" && maybeEmail === undefined) {
+    client = pool;
+    email = clientOrEmail;
+  } else {
+    client = clientOrEmail;
+    email = maybeEmail;
+  }
+
+  if (!client || typeof client.query !== "function") {
+    throw new Error("findByEmail: invalid db client (missing .query)");
+  }
+
+  const q = `
+    SELECT id, email, role, approved_at, deleted_at
+    FROM users
+    WHERE email = $1
+    LIMIT 1
+  `;
   const { rows } = await client.query(q, [email]);
   return rows[0] || null;
 }
-
 async function insertUser(client, email, role = "user") {
   const q = `
     INSERT INTO users (email, role, approved_at, created_at)
@@ -35,7 +47,6 @@ async function insertUserProfile(client, userId, fullName, address, contactNumbe
   await client.query(q, [userId, fullName, address, contactNumber]);
 }
 
-/* -------- High level convenience function (manages its own transaction) -------- */
 
 async function registerUser({ email, fullName, address, contact }) {
   if (!isValidEmail(email) || !fullName || !address || !contact) {
@@ -61,7 +72,9 @@ async function registerUser({ email, fullName, address, contact }) {
     await client.query("COMMIT");
     return { status: "PENDING_APPROVAL", userId };
   } catch (err) {
-    try { await client.query("ROLLBACK"); } catch (e) { /* swallow rollback err */ }
+    try { await client.query("ROLLBACK"); } catch (e) {
+      console.error("Error rolling back transaction:", e?.stack || e);
+    }
     throw err;
   } finally {
     client.release();
@@ -81,11 +94,9 @@ async function getDeletedAtByEmail(email) {
 
 module.exports = {
   isValidEmail,
-  // low-level
   findByEmail,
   insertUser,
   insertUserProfile,
-  // high-level
   registerUser,
   getDeletedAtByEmail,
 };

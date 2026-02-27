@@ -1,7 +1,7 @@
 const { Resend } = require("resend");
 
 if (!process.env.RESEND_API_KEY) {
-  console.warn("⚠️ RESEND_API_KEY is not set");
+  console.warn("RESEND_API_KEY is not set");
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -25,7 +25,7 @@ async function sendOtpEmail(email, otp, ttlSeconds) {
     throw err;
   }
 
-  return data; // contains id, etc.
+  return data; 
 }
 
 module.exports = { sendOtpEmail };
