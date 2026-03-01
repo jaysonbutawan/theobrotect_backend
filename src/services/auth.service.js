@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const usersModel = require("../models/users.model");
+const usersModel = require("../models/user.model");
 const { isValidEmail } = require("../utils/validators");
 
 async function requestOtp({ email, otpService }) {
