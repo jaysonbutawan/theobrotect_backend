@@ -1,5 +1,5 @@
 // src/services/users.service.js
-const usersModel = require("../models/users.model");
+const usersModel = require("../models/user.model");
 
 function clampInt(v, min, max, fallback) {
   const n = Number(v);
