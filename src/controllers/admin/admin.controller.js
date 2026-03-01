@@ -62,37 +62,3 @@ exports.profile = async (req, res) => {
   });
 };
 
-exports.getAllUser = async (req, res) => {
-  try {
-    const requester = req.user; 
-    if (!requester) {
-      return res.status(401).json({ status: "UNAUTHORIZED" });
-    }
-
-    if (requester.role !== "admin") {
-      return res.status(403).json({ status: "FORBIDDEN" });
-    }
-
-    const limit = req.query.limit;
-    const cursor = req.query.cursor || null;
-
-    
-    const q = req.query.q || null;                    
-    const includeDeleted = req.query.includeDeleted === "1";
-
-    const result = await userModel.listUsersCursor({
-      limit,
-      cursor,
-      q,
-      includeDeleted,
-    });
-
-    return res.json({
-      status: "OK",
-      ...result,
-    });
-  } catch (err) {
-    console.error("getAllUser error:", err?.stack || err);
-    return res.status(500).json({ status: "SERVER_ERROR" });
-  }
-};

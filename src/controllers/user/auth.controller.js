@@ -1,26 +1,13 @@
 const otpService = require("../../services/otp.service");
-const userModel = require("../../models/user.model");
+const authService = require("../../services/auth.service");
+const { signJwt } = require("../../utils/jwt"); 
 
 exports.requestOtp = async (req, res) => {
   try {
-    const emailRaw = req.body?.email;
-
-    if (typeof emailRaw !== "string" || !emailRaw.trim()) {
-      return res
-        .status(400)
-        .json({ status: "INVALID_EMAIL", message: "Email is required" });
-    }
-
-    const email = emailRaw.trim().toLowerCase();
-
-    const deletedAt = await userModel.getDeletedAtByEmail(email);
-    if (deletedAt) {
-      return res
-        .status(403)
-        .json({ status: "ACCOUNT_DELETED", message: "Account is deleted." });
-    }
-
-    const result = await otpService.requestOtp(email);
+    const result = await authService.requestOtp({
+      email: req.body?.email,
+      otpService,
+    });
 
     const statusMap = {
       INVALID_EMAIL: 400,
@@ -31,51 +18,20 @@ exports.requestOtp = async (req, res) => {
       OTP_SENT: 200,
     };
 
-    if (!result?.status) {
-      console.error("otpService returned invalid result:", result);
-      return res
-        .status(500)
-        .json({ status: "SERVER_ERROR", message: "Invalid service result" });
-    }
-
     return res.status(statusMap[result.status] ?? 500).json(result);
   } catch (err) {
     console.error("requestOtp error:", err?.stack || err);
-    return res
-      .status(500)
-      .json({
-        status: "SERVER_ERROR",
-        message: err?.message || "Internal error",
-      });
+    return res.status(500).json({ status: "SERVER_ERROR" });
   }
 };
 
 exports.verifyOtp = async (req, res) => {
   try {
-    const emailRaw = req.body?.email;
-    const otpRaw = req.body?.otp;
-    if (typeof emailRaw !== "string" || !emailRaw.trim()) {
-      return res
-        .status(400)
-        .json({ status: "INVALID_INPUT", message: "Email is required" });
-    }
-    if (typeof otpRaw !== "string" || !otpRaw.trim()) {
-      return res
-        .status(400)
-        .json({ status: "INVALID_INPUT", message: "OTP is required" });
-    }
-
-    const email = emailRaw.trim().toLowerCase();
-    const otp = otpRaw.trim();
-
-    const deletedAt = await userModel.getDeletedAtByEmail(email);
-    if (deletedAt) {
-      return res
-        .status(403)
-        .json({ status: "ACCOUNT_DELETED", message: "Account is deleted." });
-    }
-
-    const result = await otpService.verifyOtp(email, otp);
+    const result = await authService.verifyOtp({
+      email: req.body?.email,
+      otp: req.body?.otp,
+      otpService,
+    });
 
     const statusMap = {
       INVALID_INPUT: 400,
@@ -88,19 +44,59 @@ exports.verifyOtp = async (req, res) => {
       OK: 200,
     };
 
-    if (!result?.status) {
-      console.error("otpService.verifyOtp returned invalid result:", result);
-      return res
-        .status(500)
-        .json({ status: "SERVER_ERROR", message: "Invalid service result" });
-    }
-
     return res.status(statusMap[result.status] ?? 500).json(result);
   } catch (err) {
     console.error("verifyOtp error:", err?.stack || err);
-    return res.status(500).json({
-      status: "SERVER_ERROR",
-      message: err?.message || "Internal error",
+    return res.status(500).json({ status: "SERVER_ERROR" });
+  }
+};
+
+exports.register = async (req, res) => {
+  try {
+    const result = await authService.registerUser({
+      email: req.body?.email,
+      fullName: req.body?.full_name,
+      address: req.body?.address,
+      contactNumber: req.body?.contact_number,
     });
+
+    const statusMap = {
+      INVALID_INPUT: 400,
+      ALREADY_REGISTERED: 409,
+      PENDING_APPROVAL: 201,
+    };
+
+    return res.status(statusMap[result.status] ?? 500).json(result);
+  } catch (err) {
+    console.error("register error:", err?.stack || err);
+    return res.status(500).json({ status: "SERVER_ERROR" });
+  }
+};
+
+exports.adminLogin = async (req, res) => {
+  try {
+    const result = await authService.adminLogin({
+      email: req.body?.email,
+      password: req.body?.password,
+    });
+
+    const statusMap = {
+      INVALID_INPUT: 400,
+      INVALID_CREDENTIALS: 401,
+      ACCOUNT_DELETED: 403,
+      NOT_ADMIN: 403,
+      ADMIN_PASSWORD_NOT_SET: 409,
+      OK: 200,
+    };
+
+    if (result.status !== "OK") {
+      return res.status(statusMap[result.status] ?? 400).json({ status: result.status });
+    }
+
+    const token = signJwt(result.user);
+    return res.status(200).json({ status: "OK", token, role: result.user.role });
+  } catch (err) {
+    console.error("adminLogin error:", err?.stack || err);
+    return res.status(500).json({ status: "SERVER_ERROR" });
   }
 };
