@@ -92,6 +92,83 @@ async function getDeletedAtByEmail(email) {
   return res.rows[0]?.deleted_at ?? null;
 }
 
+function clampInt(v, min, max, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+}
+
+function encodeCursor(row) {
+  const payload = { created_at: row.created_at, id: row.id };
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodeCursor(cursor) {
+  if (!cursor) return null;
+
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const obj = JSON.parse(raw);
+
+    if (!obj?.created_at || !obj?.id) return null;
+    return obj;
+  } catch {
+    return null;
+  }
+}
+
+
+async function listUsersCursor({
+  limit = 50,
+  cursor = null,
+  includeDeleted = false,     
+  q = null,                  
+} = {}) {
+  const l = clampInt(limit, 1, 200, 50);
+  const c = decodeCursor(cursor);
+
+  const where = [];
+  const params = [];
+
+  if (!includeDeleted) {
+    where.push(`u.deleted_at IS NULL`);
+  }
+
+  if (typeof q === "string" && q.trim()) {
+    params.push(q.trim().toLowerCase() + "%");
+    where.push(`LOWER(u.email) LIKE $${params.length}`);
+  }
+
+  if (c) {
+    params.push(c.created_at);
+    params.push(c.id);
+    where.push(`(u.created_at, u.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`);
+  }
+
+  params.push(l);
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+  const sql = `
+    SELECT
+      u.id, u.email, u.approved_at, u.deleted_at, u.created_at
+    FROM users u
+    ${whereSql}
+    ORDER BY u.created_at DESC, u.id DESC
+    LIMIT $${params.length}
+  `;
+
+  const { rows } = await pool.query(sql, params);
+
+  const nextCursor = rows.length === l ? encodeCursor(rows[rows.length - 1]) : null;
+
+  return {
+    items: rows,
+    next_cursor: nextCursor,
+    limit: l,
+  };
+}
+
 module.exports = {
   isValidEmail,
   findByEmail,
@@ -99,4 +176,5 @@ module.exports = {
   insertUserProfile,
   registerUser,
   getDeletedAtByEmail,
+  listUsersCursor,
 };

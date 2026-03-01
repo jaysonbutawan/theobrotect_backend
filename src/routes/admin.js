@@ -9,5 +9,6 @@ router.use(requireRole("admin"));
 
 router.get("/dashboard", adminController.dashboard);
 router.get("/profile", adminController.profile);
+router.get("/users", adminController.getAllUser);
 
 module.exports = router;
