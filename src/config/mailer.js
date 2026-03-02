@@ -8,7 +8,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtpEmail(email, otp, ttlSeconds) {
   const from =
-  (process.env.RESEND_FROM || "TheobroTect Security <onboarding@resend.dev>").trim();
+  (process.env.RESEND_FROM).trim();
 
 
   const { data, error } = await resend.emails.send({
