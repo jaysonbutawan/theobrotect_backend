@@ -1,9 +1,6 @@
 const pool = require("../config/db");
 const bcrypt = require("bcrypt");
-
-function isValidEmail(email) {
-  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+const { isValidEmail } = require("../utils/validators");
 
 async function findUserForAdminLogin(email) {
   const q = `
@@ -55,10 +52,6 @@ async function adminLogin({ email, password }) {
       role: user.role,
     },
   };
-}
-
-function isValidEmail(email) {
-  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 async function findByEmail(clientOrEmail, maybeEmail) {
