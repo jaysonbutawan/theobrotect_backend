@@ -1,3 +1,8 @@
+const pool = require("../../config/db"); 
+const bcrypt = require("bcrypt");
+const { signJwt } = require("../../utils/jwt");
+const { isValidEmail } = require("../../utils/validators");
+
 exports.adminLogin = async (req, res) => {
   const email = (req.body?.email || "").trim().toLowerCase();
   const password = (req.body?.password || "").trim();
