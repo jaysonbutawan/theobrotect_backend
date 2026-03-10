@@ -82,7 +82,7 @@ async function findByEmail(clientOrEmail, maybeEmail) {
 async function insertUser(client, email, role = "user") {
   const q = `
     INSERT INTO users (email, role, approved_at, created_at)
-    VALUES ($1, $2, NULL, NOW())
+    VALUES ($1, $2, NOW(), NOW())
     RETURNING id
   `;
   const { rows } = await client.query(q, [email, role]);
