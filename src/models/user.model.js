@@ -33,7 +33,7 @@ async function findForAdminLogin(email) {
 async function insertUser(client, { email, role = "user" }) {
   const { rows } = await client.query(
     `INSERT INTO users (email, role, approved_at, created_at)
-     VALUES ($1, $2, NULL, NOW())
+     VALUES ($1, $2, NOW(), NOW())
      RETURNING id`,
     [email, role],
   );
